@@ -1,0 +1,16 @@
+C:\Users\Tyfyter\source\repos\DeDuplicator\bin\Debug\net5.0\DeDuplicator.exe
+C:\Users\Tyfyter\source\repos\DeDuplicator\bin\Debug\net5.0\DeDuplicator.deps.json
+C:\Users\Tyfyter\source\repos\DeDuplicator\bin\Debug\net5.0\DeDuplicator.runtimeconfig.json
+C:\Users\Tyfyter\source\repos\DeDuplicator\bin\Debug\net5.0\DeDuplicator.runtimeconfig.dev.json
+C:\Users\Tyfyter\source\repos\DeDuplicator\bin\Debug\net5.0\DeDuplicator.dll
+C:\Users\Tyfyter\source\repos\DeDuplicator\bin\Debug\net5.0\ref\DeDuplicator.dll
+C:\Users\Tyfyter\source\repos\DeDuplicator\bin\Debug\net5.0\DeDuplicator.pdb
+C:\Users\Tyfyter\source\repos\DeDuplicator\obj\Debug\net5.0\DeDuplicator.csproj.AssemblyReference.cache
+C:\Users\Tyfyter\source\repos\DeDuplicator\obj\Debug\net5.0\DeDuplicator.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Tyfyter\source\repos\DeDuplicator\obj\Debug\net5.0\DeDuplicator.AssemblyInfoInputs.cache
+C:\Users\Tyfyter\source\repos\DeDuplicator\obj\Debug\net5.0\DeDuplicator.AssemblyInfo.cs
+C:\Users\Tyfyter\source\repos\DeDuplicator\obj\Debug\net5.0\DeDuplicator.csproj.CoreCompileInputs.cache
+C:\Users\Tyfyter\source\repos\DeDuplicator\obj\Debug\net5.0\DeDuplicator.dll
+C:\Users\Tyfyter\source\repos\DeDuplicator\obj\Debug\net5.0\ref\DeDuplicator.dll
+C:\Users\Tyfyter\source\repos\DeDuplicator\obj\Debug\net5.0\DeDuplicator.pdb
+C:\Users\Tyfyter\source\repos\DeDuplicator\obj\Debug\net5.0\DeDuplicator.genruntimeconfig.cache
