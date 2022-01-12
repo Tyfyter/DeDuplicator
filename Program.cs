@@ -7,6 +7,7 @@ using System.Text;
 using System.Security.Cryptography;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using Microsoft.VisualBasic.FileIO;
 
 namespace DeDuplicator {
     public static class Program {
@@ -15,9 +16,9 @@ namespace DeDuplicator {
             string folder = null;
             string output = null;//Path.Combine(AppContext.BaseDirectory, "DeDuplicated");
             string target = null;
-            bool fixMode = false;
+            bool fixAll = false;
             bool hardlink = false;
-            bool linkInPlace = true;
+            bool linkInPlace = false;
             int maxSize = 500 * 1000 * 1000;
             foreach (Match m in matches) {
                 switch (m.Groups[1].ToString().ToUpper()) {
@@ -39,8 +40,8 @@ namespace DeDuplicator {
                     output = Path.GetFullPath(m.Groups[2].ToString().Trim(Path.DirectorySeparatorChar));
                     break;
 
-                    case "FIX":
-                    fixMode = true;
+                    case "FIXALL":
+                    fixAll = true;
                     break;
 
                     case "HARDLINK":
@@ -120,6 +121,8 @@ namespace DeDuplicator {
             
             Dictionary<string, List<string>> duplicates = new Dictionary<string, List<string>>();
             Console.WriteLine("files with duplicates:");
+            int index = 0;
+            List<string> indices = new List<string>();
             foreach (var item in files) {
                 IOrderedEnumerable<(FileInfo File, byte[] FileHash)> sorted;
                 if (target is null) {
@@ -129,32 +132,91 @@ namespace DeDuplicator {
                 }
                 var shortest = sorted.First();
                 byte[] shortestBytes = File.ReadAllBytes(shortest.File.FullName);
-                Console.WriteLine($"\t{shortest.File.FullName}:");
+                bool matched = false;
+                int abridgeCount = -3;
                 sorted.Skip(1).ToList().ForEach(v => {
-                    Console.Write($"\t\t{v.File.Name}");
                     if (ByteArrayComparer.EqualsWithSizeCheck(shortestBytes, File.ReadAllBytes(v.File.FullName))) {
-                        Console.Write(" (true duplicate)");
+                        if (!matched) {
+                            Console.WriteLine($"\t{++index}. {shortest.File.FullName}:");
+                        }
+                        if (++abridgeCount <= 0) {
+                            Console.WriteLine($"\t\t{v.File.Name}");
+                        }
                         duplicates.AddToMultiDict(shortest.File.FullName, v.File.FullName);
+                        matched = true;
                     }
-                    Console.WriteLine();
                 });
+                if (abridgeCount > 0) {
+                    Console.WriteLine($"\t\t{abridgeCount} more...");
+                }
+                if(matched)indices.Add(shortest.File.FullName);
                 //sorted.Skip(1).ToList().ForEach(v => Console.WriteLine($"\t\t{v.File.FullName}"));
             }
             Console.WriteLine();
-            if (fixMode) {
-                if (linkInPlace) {
-                    Func<string, string, bool> createLink = (location, target) => Linker.CreateSymbolicLink(location, target, 0);
-                    if (hardlink) {
-                        createLink = (location, target) => Linker.CreateHardLink(location, target, IntPtr.Zero);
+            if (!fixAll) {
+                Console.WriteLine("Select indices to fix (space separated) or leave blank to exit");
+                HashSet<int> choices = Console.ReadLine().Split(" ").Select(v => {
+                    try {
+                        return int.Parse(v);
+                    } catch (Exception) {
+                        return -1;
                     }
+                }).Where(v => v > 0 && v <= index).ToHashSet();
+                Dictionary<string, List<string>> copyTarget = new();
+                foreach (int choice in choices) {
+                    copyTarget.Add(indices[choice - 1], duplicates[indices[choice - 1]]);
+                }
+                duplicates = copyTarget;
+                if (duplicates.Count > 0) {
+                    fixAll = true;
+                }
+            }
+            if (fixAll) {
+                Func<string, string, bool> createLink = (location, target) => Linker.CreateSymbolicLink(location, target, 0);
+                if (hardlink) {
+                    createLink = (location, target) => Linker.CreateHardLink(location, target, IntPtr.Zero);
+                }
+                if (linkInPlace) {
+                    Console.WriteLine("linking in place");
                     foreach (var item in duplicates) {
                         //Console.WriteLine($"{item.Key}<-");
                         //item.Value.ForEach(v => Console.WriteLine(v));
                         foreach (string duplicate in item.Value) {
-                            File.Delete(duplicate);
+                            FileSystem.DeleteFile(duplicate, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                            //File.Delete(duplicate);
                             try {
                                 if (!createLink(duplicate, item.Key)) throw new();
-                                Console.WriteLine("created symlink " + duplicate);
+                                Console.WriteLine($"created {(hardlink ? "hardlink" : "symlink")} " + duplicate);
+                            } catch (Exception e) {
+                                FileStream failedReplacement = File.Create(duplicate + "-sym");
+                                failedReplacement.Write(File.ReadAllBytes(item.Key));
+                                Console.WriteLine("fatal error while replacing files: "+e);
+                                return 1;
+                            }
+                        }
+                    }
+                } else {
+                    Console.WriteLine("moving source to "+output);
+                    foreach (var item in duplicates) {
+                        Directory.CreateDirectory(output);
+                        string linkTarget = Path.Combine(output, new FileInfo(item.Key).Name);
+                        File.Move(item.Key, linkTarget);
+                        try {
+                            if (!createLink(item.Key, linkTarget)) throw new();
+                            Console.WriteLine($"created {(hardlink ? "hardlink" : "symlink")} " + item.Key);
+                        } catch (Exception e) {
+                            FileStream failedReplacement = File.Create(item.Key + "-sym");
+                            failedReplacement.Write(File.ReadAllBytes(item.Key));
+                            Console.WriteLine("fatal error while replacing files: "+e);
+                            return 1;
+                        }
+                        //Console.WriteLine($"{item.Key}<-");
+                        //item.Value.ForEach(v => Console.WriteLine(v));
+                        foreach (string duplicate in item.Value) {
+                            FileSystem.DeleteFile(duplicate, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                            try {
+                                if (!createLink(duplicate, linkTarget)) throw new();
+                                Console.WriteLine($"created {(hardlink ? "hardlink" : "symlink")} " + duplicate);
                             } catch (Exception e) {
                                 FileStream failedReplacement = File.Create(duplicate + "-sym");
                                 failedReplacement.Write(File.ReadAllBytes(item.Key));
