@@ -200,7 +200,11 @@ namespace DeDuplicator {
                     foreach (var item in duplicates) {
                         Directory.CreateDirectory(output);
                         string linkTarget = Path.Combine(output, new FileInfo(item.Key).Name);
-                        File.Move(item.Key, linkTarget);
+						try {
+							File.Move(item.Key, linkTarget);
+						} catch (Exception) {
+							break;
+						}
                         try {
                             if (!createLink(item.Key, linkTarget)) throw new();
                             Console.WriteLine($"created {(hardlink ? "hardlink" : "symlink")} " + item.Key);

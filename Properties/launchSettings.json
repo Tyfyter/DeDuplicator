@@ -2,7 +2,7 @@
   "profiles": {
     "DeDuplicator": {
       "commandName": "Project",
-      "commandLineArgs": "-d \"C:\\Users\\Tyfyter\\Desktop\\test\""
+      "commandLineArgs": "-d \"E:\\Program Files (x86)\\N\\RPG Maker\""
     }
   }
 }
